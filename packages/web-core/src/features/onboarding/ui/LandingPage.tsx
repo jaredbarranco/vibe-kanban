@@ -42,6 +42,7 @@ import { isTauriApp } from '@/shared/lib/platform';
 import { useAppNavigation } from '@/shared/hooks/useAppNavigation';
 import { PrimaryButton } from '@vibe/ui/components/PrimaryButton';
 import { configApi } from '@/shared/lib/api';
+import { getRemoteApiUrl } from '@/shared/lib/remoteApi';
 
 const SBX_DOCS_URL = 'https://docs.docker.com/ai/sandboxes/';
 
@@ -304,10 +305,13 @@ export function LandingPage() {
       sound_file: soundEnabled ? soundFile : null,
     });
 
+    const hasRemoteClient = !!getRemoteApiUrl();
+
     setSaving(true);
     const success = await updateAndSaveConfig({
       onboarding_acknowledged: true,
       disclaimer_acknowledged: true,
+      ...(hasRemoteClient ? {} : { remote_onboarding_acknowledged: true }),
       executor_profile: {
         executor: selectedAgent,
         variant: null,
@@ -322,13 +326,23 @@ export function LandingPage() {
     setSaving(false);
 
     if (success) {
-      trackRemoteOnboardingEvent(REMOTE_ONBOARDING_EVENTS.STAGE_COMPLETED, {
-        stage: 'landing',
-        destination: '/onboarding/sign-in',
-      });
-      appNavigation.goToOnboardingSignIn({
-        replace: true,
-      });
+      if (hasRemoteClient) {
+        trackRemoteOnboardingEvent(REMOTE_ONBOARDING_EVENTS.STAGE_COMPLETED, {
+          stage: 'landing',
+          destination: '/onboarding/sign-in',
+        });
+        appNavigation.goToOnboardingSignIn({
+          replace: true,
+        });
+      } else {
+        trackRemoteOnboardingEvent(REMOTE_ONBOARDING_EVENTS.STAGE_COMPLETED, {
+          stage: 'landing',
+          destination: '/workspaces/create',
+        });
+        appNavigation.goToWorkspacesCreate({
+          replace: true,
+        });
+      }
       return;
     }
 
