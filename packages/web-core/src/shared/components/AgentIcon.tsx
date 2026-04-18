@@ -29,6 +29,10 @@ export function getAgentName(
       return 'Copilot';
     case BaseCodingAgent.DROID:
       return 'Droid';
+    case BaseCodingAgent.DOCKER_SANDBOX:
+      return 'Docker Sandbox';
+    default:
+      return 'Agent';
   }
 }
 
