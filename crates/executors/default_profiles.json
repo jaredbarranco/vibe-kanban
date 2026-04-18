@@ -63,6 +63,15 @@
           "autonomy": "skip-permissions-unsafe"
         }
       }
+    },
+    "DOCKER_SANDBOX": {
+      "DEFAULT": {
+        "DOCKER_SANDBOX": {
+          "agent": "claude",
+          "branch_mode": true,
+          "network_policy": "balanced"
+        }
+      }
     }
   }
 }

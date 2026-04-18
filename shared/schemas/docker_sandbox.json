@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "properties": {
+    "append_prompt": {
+      "title": "Append Prompt",
+      "description": "Extra text appended to the prompt",
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "textarea",
+      "default": null
+    },
+    "agent": {
+      "title": "Agent",
+      "description": "Coding agent to run inside the sandbox (claude, codex, gemini, copilot, opencode, shell)",
+      "type": "string",
+      "enum": [
+        "claude",
+        "codex",
+        "gemini",
+        "copilot",
+        "opencode",
+        "shell"
+      ],
+      "default": "claude"
+    },
+    "template": {
+      "title": "Template",
+      "description": "Custom template image (e.g. docker.io/my-org/my-template:v1)",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "branch_mode": {
+      "title": "Branch Mode",
+      "description": "Use git worktrees inside the sandbox instead of direct workspace access",
+      "type": "boolean",
+      "default": true
+    },
+    "network_policy": {
+      "title": "Network Policy",
+      "description": "Network access policy for the sandbox",
+      "type": "string",
+      "enum": [
+        "open",
+        "balanced",
+        "locked-down"
+      ],
+      "default": "balanced"
+    },
+    "docker_size": {
+      "title": "Docker Size",
+      "description": "Sandbox volume size: 10g, 25g, 50g, or 100g",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "base_command_override": {
+      "title": "Base Command Override",
+      "description": "Override the base command with a custom command",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "additional_params": {
+      "title": "Additional Parameters",
+      "description": "Additional parameters to append to the base command",
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string"
+      }
+    },
+    "env": {
+      "title": "Environment Variables",
+      "description": "Environment variables to set when running the executor",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "type": "string"
+      }
+    }
+  },
+  "description": "Docker Sandbox executor — runs agents in isolated containers via the `sbx` CLI",
+  "type": "object"
+}

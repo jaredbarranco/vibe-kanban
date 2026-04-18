@@ -227,6 +227,9 @@ fn generate_types_content() -> String {
         executors::executors::droid::Droid::decl(),
         executors::executors::droid::Autonomy::decl(),
         executors::executors::droid::ReasoningEffortLevel::decl(),
+        executors::executors::docker_sandbox::DockerSandbox::decl(),
+        executors::executors::docker_sandbox::DockerSandboxAgent::decl(),
+        executors::executors::docker_sandbox::SandboxNetworkPolicy::decl(),
         executors::executors::AppendPrompt::decl(),
         executors::actions::coding_agent_initial::CodingAgentInitialRequest::decl(),
         executors::actions::coding_agent_follow_up::CodingAgentFollowUpRequest::decl(),
@@ -350,6 +353,10 @@ fn generate_schemas() -> Result<HashMap<&'static str, String>, serde_json::Error
         (
             "droid",
             generate_json_schema::<executors::executors::droid::Droid>()?,
+        ),
+        (
+            "docker_sandbox",
+            generate_json_schema::<executors::executors::docker_sandbox::DockerSandbox>()?,
         ),
     ]);
     println!(

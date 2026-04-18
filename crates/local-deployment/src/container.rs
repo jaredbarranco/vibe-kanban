@@ -1362,15 +1362,22 @@ impl ContainerService for LocalContainerService {
         env.insert("VK_WORKSPACE_ID", workspace.id.to_string());
         env.insert("VK_WORKSPACE_BRANCH", &workspace.branch);
 
+        // Docker Sandbox needs extra time to pull images and start the container
+        let startup_timeout_secs = match executor_action.base_executor() {
+            Some(BaseCodingAgent::DockerSandbox) => 120,
+            _ => 30,
+        };
+
         // Create the child and stream, add to execution tracker with timeout
         let mut spawned = tokio::time::timeout(
-            Duration::from_secs(30),
+            Duration::from_secs(startup_timeout_secs),
             executor_action.spawn(&current_dir, approvals_service, &env),
         )
         .await
         .map_err(|_| {
             ContainerError::Other(anyhow!(
-                "Timeout: process took more than 30 seconds to start"
+                "Timeout: process took more than {} seconds to start",
+                startup_timeout_secs
             ))
         })??;
 
