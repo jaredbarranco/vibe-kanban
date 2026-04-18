@@ -23,7 +23,8 @@ use crate::{
     env::ExecutionEnv,
     executors::{
         amp::Amp, claude::ClaudeCode, codex::Codex, copilot::Copilot, cursor::CursorAgent,
-        droid::Droid, gemini::Gemini, opencode::Opencode, qwen::QwenCode,
+        docker_sandbox::DockerSandbox, droid::Droid, gemini::Gemini, opencode::Opencode,
+        qwen::QwenCode,
     },
     logs::utils::patch,
     mcp_config::McpConfig,
@@ -36,6 +37,7 @@ pub mod claude;
 pub mod codex;
 pub mod copilot;
 pub mod cursor;
+pub mod docker_sandbox;
 pub mod droid;
 pub mod gemini;
 pub mod opencode;
@@ -119,6 +121,7 @@ pub enum CodingAgent {
     QwenCode,
     Copilot,
     Droid,
+    DockerSandbox,
     #[cfg(feature = "qa-mode")]
     QaMock(QaMockExecutor),
 }
@@ -193,7 +196,7 @@ impl CodingAgent {
                 vec![BaseAgentCapability::SessionFork]
             }
             Self::CursorAgent(_) => vec![BaseAgentCapability::SetupHelper],
-            Self::Amp(_) | Self::Copilot(_) | Self::Droid(_) => vec![],
+            Self::Amp(_) | Self::Copilot(_) | Self::Droid(_) | Self::DockerSandbox(_) => vec![],
             #[cfg(feature = "qa-mode")]
             Self::QaMock(_) => vec![], // QA mock doesn't need special capabilities
         }
