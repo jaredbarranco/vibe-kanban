@@ -286,17 +286,31 @@ async fn get_sandbox_status(name: &str) -> Result<SandboxStatus> {
 
 ## Open Questions
 
+### Resolved Answers
+
 1. **Single repo vs multiple:** Docker sandboxes can mount multiple workspaces. Should vibe-kanban support multiple host repos mounted into one sandbox?
+
+   **Answer:** Yes. Multiple repos should be supported using git worktrees inside the sandbox (same as current behavior). Each repo gets its own worktree so changes don't affect the primary repo location.
 
 2. **Port forwarding:** Dev servers run inside sandbox. Should vibe-kanban auto-forward ports back to host? How to discover which port?
 
+   **Answer:** No. Dev servers running inside the sandbox are used by the agent inside the sandbox. No need to access them from the host.
+
 3. **Branch naming:** vibe-kanban generates branch names. How to integrate with `--branch auto` from sbx?
+
+   **Answer:** Use vibe-kanban branch naming as default. Future feature: add UI option for user-specified branch name in create workspace flow.
 
 4. **Template registry:** Should users be able to specify custom template images? How to validate?
 
+   **Answer:** Yes. Allow custom template registry. Part of workspace startup verification will validate that the image can be reached (local cache or remote registry).
+
 5. **Existing sandbox reuse:** Docker sandboxes persist. Should vibe-kanban try to reconnect to existing sandboxes for the same workspace?
 
+   **Answer:** Yes. Workspace should be 1:1 with sandbox. Reconnect to existing sandbox when reopening a workspace.
+
 6. **Credentials injection:** Currently vibe-kanban doesn't handle API keys. Docker sandbox has `sbx secret` for this. Should vibe-kanban integrate?
+
+   **Answer:** No. Credentials are set up by the user on the host machine via `sbx secret`. This is a one-time setup. vibe-kanban does not need to integrate with sbx secret management.
 
 ---
 

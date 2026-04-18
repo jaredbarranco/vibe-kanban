@@ -103,10 +103,61 @@ cd packages/local-web
 pnpm run build
 ```
 
-### Build from source (macOS)
+### Build from source
 
-1. Run `./local-build.sh`
-2. Test with `cd npx-cli && node bin/cli.js`
+#### Native build (current platform)
+
+```bash
+pnpm run build:npx
+```
+
+This builds the React frontend and all three Rust binaries (`server`, `vibe-kanban-mcp`, `review`) for your current OS/architecture, then packages them as zipped binaries in `npx-cli/dist/<platform>/`. To also build the Tauri desktop app, pass `--desktop`:
+
+```bash
+bash ./local-build.sh --desktop
+```
+
+To produce an installable npm package for distribution (e.g. a private registry or `npx /path/to/file`):
+
+```bash
+pnpm run build:npx
+cd npx-cli && npm pack   # produces vibe-kanban-x.y.z.tgz
+```
+
+#### Cross-compilation
+
+To build for Linux targets from macOS or Linux, install [`cargo-zigbuild`](https://github.com/rust-cross/cargo-zigbuild):
+
+```bash
+cargo install cargo-zigbuild
+rustup target add x86_64-unknown-linux-musl aarch64-unknown-linux-musl
+
+cargo zigbuild --release --target x86_64-unknown-linux-musl  -p server -p mcp -p review --bin server --bin vibe-kanban-mcp --bin review
+cargo zigbuild --release --target aarch64-unknown-linux-musl -p server -p mcp -p review --bin server --bin vibe-kanban-mcp --bin review
+```
+
+To build Windows targets from macOS or Linux, install [`cargo-xwin`](https://github.com/rust-cross/cargo-xwin):
+
+```bash
+cargo install cargo-xwin
+rustup target add x86_64-pc-windows-msvc
+
+cargo xwin build --cross-compiler clang-cl --release --target x86_64-pc-windows-msvc -p server -p mcp -p review --bin server --bin vibe-kanban-mcp --bin review
+```
+
+To build the `x86_64-apple-darwin` target from Apple Silicon:
+
+```bash
+rustup target add x86_64-apple-darwin
+cargo build --release --target x86_64-apple-darwin -p server -p mcp -p review --bin server --bin vibe-kanban-mcp --bin review
+```
+
+When cross-compiling, build the frontend separately first (`cd packages/local-web && pnpm run build`), then package the cross-compiled binaries using the same zip layout as `local-build.sh`.
+
+> **Note:** User configuration (settings, workspaces, credentials) is stored in the platform-specific app data directory at runtime — nothing is baked into the binary itself.
+> - **macOS:** `~/Library/Application Support/vibe-kanban/`
+> - **Linux:** `~/.local/share/vibe-kanban/`
+> - **Windows:** `%APPDATA%\vibe-kanban\vibe-kanban\`
 
 ### Environment Variables
 

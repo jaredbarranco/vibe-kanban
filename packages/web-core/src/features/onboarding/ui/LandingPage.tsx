@@ -29,6 +29,7 @@ import {
   EditorType,
   SoundFile,
   ThemeMode,
+  type AvailabilityInfo,
   type EditorConfig,
 } from 'shared/types';
 import { useUserSystem } from '@/shared/hooks/useUserSystem';
@@ -40,6 +41,9 @@ import { cn, playSound } from '@/shared/lib/utils';
 import { isTauriApp } from '@/shared/lib/platform';
 import { useAppNavigation } from '@/shared/hooks/useAppNavigation';
 import { PrimaryButton } from '@vibe/ui/components/PrimaryButton';
+import { configApi } from '@/shared/lib/api';
+
+const SBX_DOCS_URL = 'https://docs.docker.com/ai/sandboxes/';
 
 type SoundOption = {
   value: SoundFile;
@@ -161,6 +165,9 @@ export function LandingPage() {
   const [customCommand, setCustomCommand] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [soundFile, setSoundFile] = useState<SoundFile>(randomDefaultSoundFile);
+  const [sbxAvailability, setSbxAvailability] =
+    useState<AvailabilityInfo | null>(null);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
   const hasTrackedStageViewRef = useRef(false);
   const hasRedirectedToRootRef = useRef(false);
 
@@ -188,6 +195,20 @@ export function LandingPage() {
     setCustomCommand(config.editor.custom_command || '');
     setInitialized(true);
   }, [config, initialized]);
+
+  useEffect(() => {
+    if (selectedAgent !== BaseCodingAgent.DOCKER_SANDBOX) {
+      setSbxAvailability(null);
+      return;
+    }
+
+    setCheckingAvailability(true);
+    configApi
+      .checkAgentAvailability(BaseCodingAgent.DOCKER_SANDBOX)
+      .then(setSbxAvailability)
+      .catch(() => setSbxAvailability({ type: 'NOT_FOUND' }))
+      .finally(() => setCheckingAvailability(false));
+  }, [selectedAgent]);
 
   useEffect(() => {
     if (!config || !initialized || hasTrackedStageViewRef.current) return;
@@ -254,7 +275,11 @@ export function LandingPage() {
 
   const isCustomEditorValid =
     editorType !== EditorType.CUSTOM || customCommand.trim() !== '';
-  const canContinue = !saving && isCustomEditorValid;
+  const isSbxMissing =
+    selectedAgent === BaseCodingAgent.DOCKER_SANDBOX &&
+    sbxAvailability?.type === 'NOT_FOUND';
+  const canContinue =
+    !saving && isCustomEditorValid && !isSbxMissing && !checkingAvailability;
 
   const handleContinue = async () => {
     if (!config || !canContinue) return;
@@ -414,6 +439,32 @@ export function LandingPage() {
                   );
                 })}
               </div>
+              {checkingAvailability && (
+                <p className="text-xs text-low">Checking sbx availability…</p>
+              )}
+              {isSbxMissing && (
+                <div className="rounded-sm border border-warning/60 bg-warning/10 p-base">
+                  <div className="flex items-start gap-base">
+                    <WarningIcon
+                      className="size-icon-sm text-warning shrink-0 mt-[2px]"
+                      weight="fill"
+                    />
+                    <p className="text-xs text-normal">
+                      <code>sbx</code> CLI not found. Docker Sandbox requires
+                      the sbx CLI to be installed and authenticated.{' '}
+                      <a
+                        href={SBX_DOCS_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-brand hover:underline"
+                      >
+                        View sbx documentation
+                      </a>
+                      .
+                    </p>
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* Column 2: Code Editor */}
