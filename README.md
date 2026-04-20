@@ -57,6 +57,40 @@ This always pulls the latest release. npm caches by content hash, so re-running 
 
 **Supported platforms:** macOS arm64 (Apple Silicon). Linux arm64 and Windows arm64 coming soon.
 
+## Docker Sandboxes
+
+Vibe Kanban supports [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/get-started/#install-and-sign-in) as an isolated execution environment for AI agents. Each task runs inside a secure container, keeping agent activity off your host machine.
+
+### Install the `sbx` CLI
+
+**macOS**
+```bash
+brew install docker/tap/sbx
+```
+
+**Windows**
+```powershell
+winget install -h Docker.sbx
+```
+
+**Linux (Ubuntu)**
+```bash
+curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
+sudo apt-get install docker-sbx
+```
+
+### Sign in and configure credentials
+
+```bash
+sbx login
+sbx secret set -g anthropic
+sbx secret set -g github -t "$(gh auth token)"
+```
+
+`sbx login` opens a browser-based OAuth flow and prompts you to choose a network policy — **Balanced** is recommended. Use `sbx secret set` to store agent API keys in your OS keychain.
+
+Once installed, select **Docker Sandbox** in Vibe Kanban settings and new workspaces will run inside isolated containers.
+
 ## Documentation
 
 Head to the [website](https://vibekanban.com/docs) for the latest documentation and user guides.

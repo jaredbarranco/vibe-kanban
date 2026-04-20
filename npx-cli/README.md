@@ -130,6 +130,62 @@ Vibe Kanban supports customization through its configuration system:
 - **Git Integration**: Native git operations for repository management
 - **Process Management**: Tokio-based async execution monitoring
 
+## Docker Sandboxes
+
+Vibe Kanban supports [Docker Sandboxes](https://docs.docker.com/ai/sandboxes/get-started/#install-and-sign-in) as an isolated execution environment for AI agents. Each task runs inside a secure container, keeping agent activity off your host machine.
+
+### Prerequisites
+
+| Platform | Requirements |
+|----------|-------------|
+| **macOS** | Tahoe (26) or later, Apple Silicon |
+| **Windows** | Windows 11 64-bit, Hypervisor Platform enabled |
+| **Linux (Ubuntu)** | 22.04+, KVM virtualization, user in `kvm` group |
+
+### Install the `sbx` CLI
+
+**macOS**
+
+```bash
+brew install docker/tap/sbx
+```
+
+**Windows**
+
+```powershell
+winget install -h Docker.sbx
+```
+
+**Linux (Ubuntu)**
+
+```bash
+curl -fsSL https://get.docker.com | sudo REPO_ONLY=1 sh
+sudo apt-get install docker-sbx
+```
+
+### Sign in
+
+```bash
+sbx login
+```
+
+This opens a browser-based OAuth flow and prompts you to choose a default network policy. **Balanced** is recommended — it permits traffic to development services while restricting others.
+
+### Configure agent credentials
+
+Store API keys in your OS keychain so sandboxed agents can access them:
+
+```bash
+sbx secret set -g anthropic
+sbx secret set -g github -t "$(gh auth token)"
+```
+
+Claude Code subscribers can also authenticate from inside a running sandbox using `/login`.
+
+### Select Docker Sandbox in Vibe Kanban
+
+Once the `sbx` CLI is installed and authenticated, open Vibe Kanban settings and select **Docker Sandbox** as your execution environment. New task attempts will automatically run inside isolated containers.
+
 ## Requirements
 
 - Node.js (for npx execution)
