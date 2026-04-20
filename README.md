@@ -45,11 +45,17 @@ npx vibe-kanban
 
 ## Installation
 
+> **This is a community fork** with arm64 releases hosted on GitHub. Use the command below instead of `npx vibe-kanban`.
+
 Make sure you have authenticated with your favourite coding agent. A full list of supported coding agents can be found in the [docs](https://vibekanban.com/docs/supported-coding-agents). Then in your terminal run:
 
 ```bash
-npx vibe-kanban
+npx https://github.com/jaredbarranco/vibe-kanban/releases/latest/download/vibe-kanban-latest.tgz
 ```
+
+This always pulls the latest release. npm caches by content hash, so re-running only re-downloads when a new version is available.
+
+**Supported platforms:** macOS arm64 (Apple Silicon). Linux arm64 and Windows arm64 coming soon.
 
 ## Documentation
 
