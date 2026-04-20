@@ -4,9 +4,11 @@ import path from 'path';
 import crypto from 'crypto';
 import os from 'os';
 
-// Replaced during npm pack by workflow
+// Replaced during npm pack by workflow (or local pack script)
 export const R2_BASE_URL = '__R2_PUBLIC_URL__';
 export const BINARY_TAG = '__BINARY_TAG__'; // e.g., v0.0.135-20251215122030
+// Optional: override manifest URL for GitHub releases hosting (replaces R2 manifest path)
+export const BINARY_MANIFEST_URL = '__BINARY_MANIFEST_URL__';
 export const CACHE_DIR = path.join(os.homedir(), '.vibe-kanban', 'bin');
 
 // Local development mode: use binaries from npx-cli/dist/ instead of R2
@@ -19,6 +21,7 @@ export const LOCAL_DEV_MODE =
 export interface BinaryInfo {
   sha256: string;
   size: number;
+  url?: string; // Full download URL — used when hosting on GitHub releases instead of R2
 }
 
 export interface BinaryManifest {
@@ -180,9 +183,10 @@ export async function ensureBinary(
 
   fs.mkdirSync(cacheDir, { recursive: true });
 
-  const manifest = await fetchJson<BinaryManifest>(
-    `${R2_BASE_URL}/binaries/${BINARY_TAG}/manifest.json`
-  );
+  const manifestUrl = BINARY_MANIFEST_URL.startsWith('__')
+    ? `${R2_BASE_URL}/binaries/${BINARY_TAG}/manifest.json`
+    : BINARY_MANIFEST_URL;
+  const manifest = await fetchJson<BinaryManifest>(manifestUrl);
   const binaryInfo = manifest.platforms?.[platform]?.[binaryName];
 
   if (!binaryInfo) {
@@ -191,7 +195,9 @@ export async function ensureBinary(
     );
   }
 
-  const url = `${R2_BASE_URL}/binaries/${BINARY_TAG}/${platform}/${binaryName}.zip`;
+  const url =
+    binaryInfo.url ??
+    `${R2_BASE_URL}/binaries/${BINARY_TAG}/${platform}/${binaryName}.zip`;
   await downloadFile(url, zipPath, binaryInfo.sha256, onProgress);
 
   return zipPath;
