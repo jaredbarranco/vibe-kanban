@@ -1,4 +1,8 @@
-use std::{path::Path, process::Stdio, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    process::Stdio,
+    sync::Arc,
+};
 
 use async_trait::async_trait;
 use futures::stream::BoxStream;
@@ -7,8 +11,7 @@ use serde::{Deserialize, Serialize};
 use tokio::process::Command;
 use ts_rs::TS;
 use workspace_utils::{
-    command_ext::GroupSpawnNoWindowExt,
-    msg_store::MsgStore,
+    command_ext::GroupSpawnNoWindowExt, msg_store::MsgStore,
     shell::resolve_executable_path_blocking,
 };
 
@@ -119,7 +122,10 @@ pub struct DockerSandbox {
     pub branch_mode: bool,
 
     #[serde(default)]
-    #[schemars(title = "Network Policy", description = "Network access policy for the sandbox")]
+    #[schemars(
+        title = "Network Policy",
+        description = "Network access policy for the sandbox"
+    )]
     pub network_policy: SandboxNetworkPolicy,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -200,6 +206,30 @@ impl DockerSandbox {
             .await;
     }
 
+    /// If `workspace_path` is a git worktree (`.git` is a file), returns the path of the
+    /// main repository's `.git` directory so it can be mounted into the sandbox alongside
+    /// the worktree.  Without this, the gitdir pointer inside the worktree's `.git` file
+    /// references a macOS host path that does not exist inside the Linux container.
+    fn find_worktree_main_git_dir(workspace_path: &Path) -> Option<PathBuf> {
+        let git_file = workspace_path.join(".git");
+        if !git_file.is_file() {
+            return None;
+        }
+
+        let contents = std::fs::read_to_string(&git_file).ok()?;
+        // Format: "gitdir: /abs/path/to/main/repo/.git/worktrees/<name>"
+        let gitdir_str = contents
+            .lines()
+            .find_map(|l| l.strip_prefix("gitdir:"))?
+            .trim();
+
+        // Walk up the gitdir path to find the component named ".git"
+        Path::new(gitdir_str)
+            .ancestors()
+            .find(|p| p.file_name() == Some(std::ffi::OsStr::new(".git")))
+            .map(|p| p.to_path_buf())
+    }
+
     async fn create_sandbox(
         &self,
         sandbox_name: &str,
@@ -222,6 +252,15 @@ impl DockerSandbox {
 
         cmd.args([self.agent.as_str(), workspace_path.to_str().unwrap_or(".")]);
 
+        // Mount the main repo's .git directory so that git operations work inside the
+        // container.  The worktree's .git file points to an absolute host path; without
+        // this extra mount that path is a dead link in the Linux container.
+        if let Some(git_dir) = Self::find_worktree_main_git_dir(workspace_path) {
+            if let Some(git_dir_str) = git_dir.to_str() {
+                cmd.arg(git_dir_str);
+            }
+        }
+
         let status = cmd.status().await.map_err(ExecutorError::Io)?;
         if status.success() {
             return Ok(());
@@ -241,7 +280,11 @@ impl DockerSandbox {
             return Ok(());
         }
 
-        if self.create_sandbox(sandbox_name, workspace_path).await.is_ok() {
+        if self
+            .create_sandbox(sandbox_name, workspace_path)
+            .await
+            .is_ok()
+        {
             return Ok(());
         }
 
@@ -307,7 +350,9 @@ impl DockerSandbox {
             .stderr(Stdio::piped())
             .current_dir(current_dir);
 
-        env.clone().with_profile(&self.cmd).apply_to_command(&mut cmd);
+        env.clone()
+            .with_profile(&self.cmd)
+            .apply_to_command(&mut cmd);
 
         let child = cmd.group_spawn_no_window()?;
         Ok(child.into())
