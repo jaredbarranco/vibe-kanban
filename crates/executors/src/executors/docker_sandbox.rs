@@ -135,6 +135,13 @@ pub struct DockerSandbox {
     )]
     pub docker_size: Option<String>,
 
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[schemars(
+        title = "Extra Mounts",
+        description = "Additional host paths to mount into the sandbox (e.g. /Users/you/.claude/agents). Use full absolute paths — ~ is not expanded."
+    )]
+    pub extra_mounts: Vec<String>,
+
     #[serde(flatten)]
     pub cmd: CmdOverrides,
 }
@@ -148,6 +155,7 @@ impl Default for DockerSandbox {
             branch_mode: true,
             network_policy: SandboxNetworkPolicy::default(),
             docker_size: None,
+            extra_mounts: vec![],
             cmd: CmdOverrides::default(),
         }
     }
@@ -259,6 +267,10 @@ impl DockerSandbox {
             if let Some(git_dir_str) = git_dir.to_str() {
                 cmd.arg(git_dir_str);
             }
+        }
+
+        for mount in &self.extra_mounts {
+            cmd.arg(mount);
         }
 
         let status = cmd.status().await.map_err(ExecutorError::Io)?;

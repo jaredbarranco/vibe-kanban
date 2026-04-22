@@ -58,6 +58,14 @@
         "null"
       ]
     },
+    "extra_mounts": {
+      "title": "Extra Mounts",
+      "description": "Additional host paths to mount into the sandbox (e.g. /Users/you/.claude/agents). Use full absolute paths — ~ is not expanded.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
     "base_command_override": {
       "title": "Base Command Override",
       "description": "Override the base command with a custom command",
