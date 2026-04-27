@@ -663,7 +663,7 @@ export type Autonomy = "normal" | "low" | "medium" | "high" | "skip-permissions-
 
 export type DroidReasoningEffort = "none" | "dynamic" | "off" | "low" | "medium" | "high";
 
-export type DockerSandbox = { append_prompt: AppendPrompt, agent: DockerSandboxAgent, template?: string | null, branch_mode: boolean, network_policy: SandboxNetworkPolicy, docker_size?: string | null, base_command_override?: string | null, additional_params?: Array<string> | null, env?: { [key in string]?: string } | null, };
+export type DockerSandbox = { append_prompt: AppendPrompt, agent: DockerSandboxAgent, template?: string | null, branch_mode: boolean, network_policy: SandboxNetworkPolicy, docker_size?: string | null, extra_mounts?: Array<string>, base_command_override?: string | null, additional_params?: Array<string> | null, env?: { [key in string]?: string } | null, };
 
 export type DockerSandboxAgent = "claude" | "codex" | "gemini" | "copilot" | "opencode" | "shell";
 
