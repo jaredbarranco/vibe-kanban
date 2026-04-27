@@ -238,6 +238,11 @@ impl DockerSandbox {
             .map(|p| p.to_path_buf())
     }
 
+    fn workspace_is_git_repo(workspace_path: &Path) -> bool {
+        let git_entry = workspace_path.join(".git");
+        git_entry.is_file() || git_entry.is_dir()
+    }
+
     async fn create_sandbox(
         &self,
         sandbox_name: &str,
@@ -254,7 +259,7 @@ impl DockerSandbox {
             cmd.args(["--size", size.as_str()]);
         }
 
-        if self.branch_mode {
+        if self.branch_mode && Self::workspace_is_git_repo(workspace_path) {
             cmd.args(["--branch", "auto"]);
         }
 
@@ -433,7 +438,7 @@ impl StandardCodingAgentExecutor for DockerSandbox {
                     msg_store.clone(),
                     current_dir,
                     entry_index_provider.clone(),
-                    HistoryStrategy::AmpResume,
+                    HistoryStrategy::Default,
                 );
                 let h2 = normalize_stderr_logs(msg_store, entry_index_provider);
                 vec![h1, h2]
