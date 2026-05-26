@@ -66,6 +66,14 @@
         "type": "string"
       }
     },
+    "model": {
+      "title": "Model",
+      "description": "Model to use when agent is Claude (e.g. claude-sonnet-4-5, claude-opus-4-5). Leave empty to use the agent's default.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
     "base_command_override": {
       "title": "Base Command Override",
       "description": "Override the base command with a custom command",

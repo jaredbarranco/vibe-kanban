@@ -33,9 +33,10 @@ use crate::{
 };
 
 /// The coding agent to run inside the Docker sandbox
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, TS, JsonSchema)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, TS, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum DockerSandboxAgent {
+    #[default]
     Claude,
     Codex,
     Gemini,
@@ -69,25 +70,14 @@ impl DockerSandboxAgent {
     }
 }
 
-impl Default for DockerSandboxAgent {
-    fn default() -> Self {
-        Self::Claude
-    }
-}
-
 /// Network access policy for the Docker sandbox
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, TS, JsonSchema)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, TS, JsonSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum SandboxNetworkPolicy {
     Open,
+    #[default]
     Balanced,
     LockedDown,
-}
-
-impl Default for SandboxNetworkPolicy {
-    fn default() -> Self {
-        Self::Balanced
-    }
 }
 
 fn default_branch_mode() -> bool {
@@ -142,6 +132,13 @@ pub struct DockerSandbox {
     )]
     pub extra_mounts: Vec<String>,
 
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schemars(
+        title = "Model",
+        description = "Model to use when agent is Claude (e.g. claude-sonnet-4-5, claude-opus-4-5). Leave empty to use the agent's default."
+    )]
+    pub model: Option<String>,
+
     #[serde(flatten)]
     pub cmd: CmdOverrides,
 }
@@ -156,6 +153,7 @@ impl Default for DockerSandbox {
             network_policy: SandboxNetworkPolicy::default(),
             docker_size: None,
             extra_mounts: vec![],
+            model: None,
             cmd: CmdOverrides::default(),
         }
     }
@@ -268,10 +266,10 @@ impl DockerSandbox {
         // Mount the main repo's .git directory so that git operations work inside the
         // container.  The worktree's .git file points to an absolute host path; without
         // this extra mount that path is a dead link in the Linux container.
-        if let Some(git_dir) = Self::find_worktree_main_git_dir(workspace_path) {
-            if let Some(git_dir_str) = git_dir.to_str() {
-                cmd.arg(git_dir_str);
-            }
+        if let Some(git_dir) = Self::find_worktree_main_git_dir(workspace_path)
+            && let Some(git_dir_str) = git_dir.to_str()
+        {
+            cmd.arg(git_dir_str);
         }
 
         for mount in &self.extra_mounts {
@@ -282,10 +280,9 @@ impl DockerSandbox {
         if status.success() {
             return Ok(());
         }
-        Err(ExecutorError::Io(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("Failed to create Docker sandbox '{sandbox_name}'"),
-        )))
+        Err(ExecutorError::Io(std::io::Error::other(format!(
+            "Failed to create Docker sandbox '{sandbox_name}'"
+        ))))
     }
 
     async fn ensure_sandbox_exists(
@@ -337,6 +334,9 @@ impl DockerSandbox {
                     "stream-json",
                     "--verbose",
                 ]);
+                if let Some(model) = &self.model {
+                    cmd.args(["--model", model]);
+                }
                 cmd.args(resume_args);
             }
             DockerSandboxAgent::Codex => {
@@ -379,10 +379,13 @@ impl DockerSandbox {
 #[async_trait]
 impl StandardCodingAgentExecutor for DockerSandbox {
     fn apply_overrides(&mut self, executor_config: &ExecutorConfig) {
-        if let Some(agent_id) = &executor_config.agent_id {
-            if let Some(agent) = DockerSandboxAgent::from_str_opt(agent_id) {
-                self.agent = agent;
-            }
+        if let Some(agent_id) = &executor_config.agent_id
+            && let Some(agent) = DockerSandboxAgent::from_str_opt(agent_id)
+        {
+            self.agent = agent;
+        }
+        if let Some(model_id) = &executor_config.model_id {
+            self.model = Some(model_id.clone());
         }
         if let Some(permission_policy) = executor_config.permission_policy.clone() {
             self.network_policy = match permission_policy {
@@ -463,7 +466,7 @@ impl StandardCodingAgentExecutor for DockerSandbox {
         ExecutorConfig {
             executor: BaseCodingAgent::DockerSandbox,
             variant: None,
-            model_id: None,
+            model_id: self.model.clone(),
             agent_id: Some(self.agent.as_str().to_string()),
             reasoning_id: None,
             permission_policy: Some(PermissionPolicy::Auto),
