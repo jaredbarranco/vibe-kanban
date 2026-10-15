@@ -692,6 +692,108 @@ export function GeneralSettingsSection() {
         )}
       </SettingsCard>
 
+      {/* Git Commit Agent */}
+      <SettingsCard
+        title={t('settings.general.gitCommitAgent.title')}
+        description={t('settings.general.gitCommitAgent.description')}
+      >
+        <SettingsField
+          label={t('settings.general.gitCommitAgent.executor.label')}
+          description={t('settings.general.gitCommitAgent.executor.helper')}
+        >
+          <SettingsSelect
+            value={
+              draft?.git_commit_agent_config?.executor_config.executor ?? ''
+            }
+            options={[
+              {
+                value: '',
+                label: t('settings.general.gitCommitAgent.executor.none'),
+              },
+              ...Object.keys(profiles ?? {}).map((key) => ({
+                value: key,
+                label: toPrettyCase(key),
+              })),
+            ]}
+            onChange={(value) => {
+              if (!value) {
+                updateDraft({ git_commit_agent_config: null });
+              } else {
+                updateDraft({
+                  git_commit_agent_config: {
+                    executor_config: {
+                      executor: value as BaseCodingAgent,
+                      variant: null,
+                      model_id:
+                        draft?.git_commit_agent_config?.executor_config
+                          .model_id ?? undefined,
+                    },
+                    system_prompt:
+                      draft?.git_commit_agent_config?.system_prompt ?? null,
+                  },
+                });
+              }
+            }}
+            placeholder={t(
+              'settings.general.gitCommitAgent.executor.placeholder'
+            )}
+          />
+        </SettingsField>
+
+        {draft?.git_commit_agent_config && (
+          <>
+            <SettingsField
+              label={t('settings.general.gitCommitAgent.modelId.label')}
+              description={t(
+                'settings.general.gitCommitAgent.modelId.helper'
+              )}
+            >
+              <SettingsInput
+                value={
+                  draft.git_commit_agent_config.executor_config.model_id ?? ''
+                }
+                onChange={(value) =>
+                  updateDraft({
+                    git_commit_agent_config: {
+                      ...draft.git_commit_agent_config!,
+                      executor_config: {
+                        ...draft.git_commit_agent_config!.executor_config,
+                        model_id: value || undefined,
+                      },
+                    },
+                  })
+                }
+                placeholder={t(
+                  'settings.general.gitCommitAgent.modelId.placeholder'
+                )}
+              />
+            </SettingsField>
+
+            <SettingsField
+              label={t('settings.general.gitCommitAgent.systemPrompt.label')}
+              description={t(
+                'settings.general.gitCommitAgent.systemPrompt.helper'
+              )}
+            >
+              <SettingsTextarea
+                value={draft.git_commit_agent_config.system_prompt ?? ''}
+                onChange={(value) =>
+                  updateDraft({
+                    git_commit_agent_config: {
+                      ...draft.git_commit_agent_config!,
+                      system_prompt: value || null,
+                    },
+                  })
+                }
+                placeholder={t(
+                  'settings.general.gitCommitAgent.systemPrompt.placeholder'
+                )}
+              />
+            </SettingsField>
+          </>
+        )}
+      </SettingsCard>
+
       {/* Notifications */}
       <SettingsCard
         title={t('settings.general.notifications.title')}

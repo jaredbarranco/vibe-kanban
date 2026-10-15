@@ -39,6 +39,9 @@ interface ChatBoxBaseProps {
   // Model selector node (rendered with footer controls)
   modelSelector?: ReactNode;
 
+  // Optional content rendered between the header and the editor
+  aboveEditor?: ReactNode;
+
   // Banner content (queued message indicator, feedback mode indicator)
   banner?: ReactNode;
 
@@ -64,6 +67,7 @@ export function ChatBoxBase({
   footerLeft,
   footerRight,
   modelSelector,
+  aboveEditor,
   banner,
   visualVariant,
   isRunning,
@@ -120,6 +124,10 @@ export function ChatBoxBase({
           </div>
           <Toolbar className="gap-[9px]">{headerRight}</Toolbar>
         </div>
+      )}
+
+      {aboveEditor && (
+        <div className="border-b px-base py-base">{aboveEditor}</div>
       )}
 
       {/* Editor area */}

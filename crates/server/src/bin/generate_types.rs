@@ -197,6 +197,7 @@ fn generate_types_content() -> String {
         executors::mcp_config::McpConfig::decl(),
         executors::actions::ExecutorActionType::decl(),
         executors::profile::ExecutorConfig::decl(),
+        executors::profile::GitCommitAgentConfig::decl(),
         executors::actions::script::ScriptContext::decl(),
         executors::actions::script::ScriptRequest::decl(),
         executors::actions::script::ScriptRequestLanguage::decl(),

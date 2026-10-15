@@ -2,7 +2,6 @@ import { useMemo, useCallback, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDropzone } from 'react-dropzone';
 import { useCreateMode } from '@/features/create-mode/model/useCreateMode';
-import { AgentIcon } from '@/shared/components/AgentIcon';
 import { useUserSystem } from '@/shared/hooks/useUserSystem';
 import WYSIWYGEditor from '@/shared/components/WYSIWYGEditor';
 import { useCreateWorkspace } from '@/shared/hooks/useCreateWorkspace';
@@ -14,7 +13,7 @@ import {
   toPrettyCase,
   splitMessageToTitleDescription,
 } from '@/shared/lib/string';
-import type { BaseCodingAgent, Repo } from 'shared/types';
+import type { BaseCodingAgent, GitCommitAgentConfig, Repo } from 'shared/types';
 import { CreateChatBox } from '@vibe/ui/components/CreateChatBox';
 import { SettingsDialog } from '@/shared/dialogs/settings/SettingsDialog';
 import { CreateModeRepoPickerBar } from './CreateModeRepoPickerBar';
@@ -61,6 +60,15 @@ export function CreateChatBoxContainer({
   const { createWorkspace } = useCreateWorkspace();
   const hasSelectedRepos = repos.length > 0;
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [gitCommitAgentExecutor, setGitCommitAgentExecutor] = useState<
+    string | null
+  >(null);
+  const [gitCommitAgentModelId, setGitCommitAgentModelId] = useState<
+    string | null
+  >(null);
+  const [gitCommitAgentSystemPrompt, setGitCommitAgentSystemPrompt] = useState<
+    string | null
+  >(null);
   const [hasInitializedStep, setHasInitializedStep] = useState(false);
   const [isSelectingRepos, setIsSelectingRepos] = useState(true);
 
@@ -226,6 +234,18 @@ export function CreateChatBoxContainer({
     if (!canSubmit || !executorConfig) return;
 
     const { title } = splitMessageToTitleDescription(message);
+    const gitCommitAgentConfig: GitCommitAgentConfig | null =
+      gitCommitAgentExecutor
+        ? {
+            executor_config: {
+              executor: gitCommitAgentExecutor as BaseCodingAgent,
+              variant: null,
+              model_id: gitCommitAgentModelId ?? undefined,
+            },
+            system_prompt: gitCommitAgentSystemPrompt,
+          }
+        : null;
+
     const data = {
       executor_config: executorConfig,
       name: title,
@@ -241,6 +261,7 @@ export function CreateChatBoxContainer({
           }
         : null,
       attachment_ids: getAttachmentIds(),
+      git_commit_agent_config: gitCommitAgentConfig,
     };
     const linkToIssue = linkedIssue
       ? {
@@ -352,12 +373,6 @@ export function CreateChatBoxContainer({
                       sendShortcut={config?.send_message_shortcut}
                     />
                   )}
-                  agentIcon={
-                    <AgentIcon
-                      agent={effectiveExecutor}
-                      className="size-icon-xl"
-                    />
-                  }
                   onSend={handleSubmit}
                   isSending={createWorkspace.isPending}
                   disabled={!hasSelectedRepos}
@@ -385,6 +400,17 @@ export function CreateChatBoxContainer({
                       />
                     ) : undefined
                   }
+                  gitCommitAgent={{
+                    selected: gitCommitAgentExecutor,
+                    options: executorOptions,
+                    modelId: gitCommitAgentModelId,
+                    systemPrompt: gitCommitAgentSystemPrompt,
+                    onChange: (executor, modelId, systemPrompt) => {
+                      setGitCommitAgentExecutor(executor);
+                      setGitCommitAgentModelId(modelId);
+                      setGitCommitAgentSystemPrompt(systemPrompt);
+                    },
+                  }}
                   onPasteFiles={uploadFiles}
                   localAttachments={localAttachments}
                   dropzone={{ getRootProps, getInputProps, isDragActive }}

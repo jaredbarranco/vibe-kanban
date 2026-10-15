@@ -192,6 +192,17 @@ impl std::fmt::Display for ExecutorConfig {
     }
 }
 
+/// Configuration for the git commit agent: a sub-model that generates commit messages
+/// via a direct one-shot API call at commit time.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+pub struct GitCommitAgentConfig {
+    /// Which executor/model to use for generating commit messages
+    pub executor_config: ExecutorConfig,
+    /// Optional system prompt describing the desired commit message format
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
 pub struct ExecutorProfile {
     #[serde(default, skip_serializing_if = "Option::is_none")]

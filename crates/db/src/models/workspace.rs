@@ -1,5 +1,8 @@
 use chrono::{DateTime, Utc};
-use executors::actions::{ExecutorAction, ExecutorActionType};
+use executors::{
+    actions::{ExecutorAction, ExecutorActionType},
+    profile::GitCommitAgentConfig,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, SqlitePool};
 use thiserror::Error;
@@ -667,6 +670,40 @@ impl Workspace {
         }
 
         Ok(Some(ws))
+    }
+
+    pub async fn get_git_commit_agent_config(
+        pool: &SqlitePool,
+        workspace_id: Uuid,
+    ) -> Result<Option<GitCommitAgentConfig>, sqlx::Error> {
+        let row = sqlx::query!(
+            r#"SELECT git_commit_agent_config FROM workspaces WHERE id = $1"#,
+            workspace_id
+        )
+        .fetch_optional(pool)
+        .await?;
+
+        let config = row
+            .and_then(|r| r.git_commit_agent_config)
+            .and_then(|s| serde_json::from_str::<GitCommitAgentConfig>(&s).ok());
+
+        Ok(config)
+    }
+
+    pub async fn set_git_commit_agent_config(
+        pool: &SqlitePool,
+        workspace_id: Uuid,
+        config: Option<&GitCommitAgentConfig>,
+    ) -> Result<(), sqlx::Error> {
+        let json = config.map(|c| serde_json::to_string(c).unwrap_or_default());
+        sqlx::query!(
+            "UPDATE workspaces SET git_commit_agent_config = $1, updated_at = datetime('now', 'subsec') WHERE id = $2",
+            json,
+            workspace_id
+        )
+        .execute(pool)
+        .await?;
+        Ok(())
     }
 }
 

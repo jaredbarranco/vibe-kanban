@@ -342,6 +342,7 @@ impl GitCli {
         self.git(worktree_path, ["commit", "-m", message])?;
         Ok(())
     }
+
     /// Fetch a branch to the given remote using native git authentication.
     pub fn fetch_with_refspec(
         &self,

@@ -220,6 +220,7 @@ pub async fn create_and_start_workspace(
         executor_config,
         prompt,
         attachment_ids,
+        git_commit_agent_config,
     } = payload;
 
     let mut workspace_prompt = normalize_prompt(&prompt).ok_or_else(|| {
@@ -294,6 +295,21 @@ pub async fn create_and_start_workspace(
 
     let workspace = managed_workspace.workspace.clone();
     tracing::info!("Created workspace {}", workspace.id);
+
+    if let Some(ref config) = git_commit_agent_config
+        && let Err(e) = Workspace::set_git_commit_agent_config(
+            &deployment.db().pool,
+            workspace.id,
+            Some(config),
+        )
+        .await
+    {
+        tracing::warn!(
+            "Failed to store git commit agent config for workspace {}: {}",
+            workspace.id,
+            e
+        );
+    }
 
     let execution_process = deployment
         .container()

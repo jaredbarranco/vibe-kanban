@@ -44,6 +44,7 @@ use worktree_manager::WorktreeManager;
 
 use crate::{container::LocalContainerService, pty::PtyService};
 mod command;
+mod commit_agent;
 pub mod container;
 mod copy;
 pub mod pty;

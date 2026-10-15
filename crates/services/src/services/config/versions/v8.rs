@@ -1,5 +1,8 @@
 use anyhow::Error;
-use executors::{executors::BaseCodingAgent, profile::ExecutorProfileId};
+use executors::{
+    executors::BaseCodingAgent,
+    profile::{ExecutorProfileId, GitCommitAgentConfig},
+};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 pub use v7::{
@@ -68,6 +71,8 @@ pub struct Config {
     pub relay_enabled: bool,
     #[serde(default)]
     pub host_nickname: Option<String>,
+    #[serde(default)]
+    pub git_commit_agent_config: Option<GitCommitAgentConfig>,
 }
 
 impl Config {
@@ -99,6 +104,7 @@ impl Config {
             send_message_shortcut: SendMessageShortcut::default(),
             relay_enabled: true,
             host_nickname: None,
+            git_commit_agent_config: None,
         }
     }
 
@@ -155,6 +161,7 @@ impl Default for Config {
             send_message_shortcut: SendMessageShortcut::default(),
             relay_enabled: true,
             host_nickname: None,
+            git_commit_agent_config: None,
         }
     }
 }

@@ -117,6 +117,14 @@
   "conversation": {
     "executors": "Executors",
     "saveAsDefault": "Save as default",
+    "gitCommitAgent": {
+      "label": "Git Commit Agent",
+      "none": "None (default)",
+      "modelIdLabel": "Model (optional)",
+      "modelIdPlaceholder": "e.g. claude-haiku-4-5-20251001",
+      "systemPromptLabel": "Commit message system prompt",
+      "systemPromptPlaceholder": "Describe how commit messages should be formatted, e.g. conventional commits style..."
+    },
     "you": "You",
     "thinking": "Thinking",
     "todo": "Todo",

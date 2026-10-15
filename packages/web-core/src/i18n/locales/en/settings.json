@@ -199,6 +199,26 @@
           "helper": "Custom prompt for the commit reminder. The git status will be appended automatically."
         }
       },
+      "gitCommitAgent": {
+        "title": "Git Commit Agent",
+        "description": "Use an AI model to generate structured commit messages when a workspace's coding agent finishes.",
+        "executor": {
+          "label": "Default model",
+          "helper": "The model used to generate commit messages. Falls back to the raw agent summary if not configured.",
+          "none": "None (use raw agent summary)",
+          "placeholder": "Select a model"
+        },
+        "modelId": {
+          "label": "Model ID (optional)",
+          "helper": "Override the default model. Leave blank to use the executor's default.",
+          "placeholder": "e.g. claude-haiku-4-5-20251001"
+        },
+        "systemPrompt": {
+          "label": "System prompt",
+          "helper": "Instructions for how commit messages should be formatted. Leave blank for a built-in default.",
+          "placeholder": "E.g. Use conventional commits format: feat(scope): description..."
+        }
+      },
       "notifications": {
         "title": "Notifications",
         "description": "Control when and how you receive notifications.",

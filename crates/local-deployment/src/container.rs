@@ -37,7 +37,7 @@ use executors::{
     logs::{NormalizedEntryType, utils::patch::extract_normalized_entry_from_patch},
 };
 use futures::{FutureExt, TryStreamExt, stream::select};
-use git::GitService;
+use git::{GitService, StatusEntry};
 use serde_json::json;
 use services::services::{
     analytics::AnalyticsContext,
@@ -61,7 +61,7 @@ use utils::{
 use uuid::Uuid;
 use workspace_manager::{RepoWorkspaceInput, WorkspaceError, WorkspaceManager};
 
-use crate::{command, copy};
+use crate::{command, commit_agent, copy};
 
 const WORKSPACE_TOUCH_DEBOUNCE: Duration = Duration::from_mins(2);
 
@@ -341,12 +341,14 @@ impl LocalContainerService {
     }
 
     /// Get the commit message based on the execution run reason.
-    async fn get_commit_message(&self, ctx: &ExecutionContext) -> String {
+    async fn get_commit_message(
+        &self,
+        ctx: &ExecutionContext,
+        changed_files: &[StatusEntry],
+    ) -> String {
         match ctx.execution_process.run_reason {
             ExecutionProcessRunReason::CodingAgent => {
-                // Try to retrieve the task summary from the coding agent turn
-                // otherwise fallback to default message
-                match CodingAgentTurn::find_by_execution_process_id(
+                let summary = match CodingAgentTurn::find_by_execution_process_id(
                     &self.db().pool,
                     ctx.execution_process.id,
                 )
@@ -374,7 +376,17 @@ impl LocalContainerService {
                             ctx.workspace.id
                         )
                     }
+                };
+
+                // Try to generate a structured commit message via the git commit agent
+                if let Some(message) = self
+                    .try_generate_commit_message_via_agent(ctx, &summary, changed_files)
+                    .await
+                {
+                    return message;
                 }
+
+                summary
             }
             ExecutionProcessRunReason::CleanupScript => {
                 format!("Cleanup script changes for workspace {}", ctx.workspace.id)
@@ -383,6 +395,54 @@ impl LocalContainerService {
                 "Changes from execution process {}",
                 ctx.execution_process.id
             ),
+        }
+    }
+
+    async fn try_generate_commit_message_via_agent(
+        &self,
+        ctx: &ExecutionContext,
+        summary: &str,
+        changed_files: &[StatusEntry],
+    ) -> Option<String> {
+        // Check per-workspace config first, then global config
+        let workspace_config = Workspace::get_git_commit_agent_config(&self.db().pool, ctx.workspace.id)
+            .await
+            .ok()
+            .flatten();
+
+        let config = workspace_config.or_else(|| {
+            self.config
+                .try_read()
+                .ok()
+                .and_then(|c| c.git_commit_agent_config.clone())
+        });
+
+        let config = match config {
+            Some(c) => c,
+            None => {
+                tracing::info!(
+                    "Git commit agent: no config found for workspace {} (neither per-workspace nor global), skipping",
+                    ctx.workspace.id
+                );
+                return None;
+            }
+        };
+
+        match commit_agent::generate_commit_message(&config, summary, changed_files).await {
+            Some(msg) => {
+                tracing::info!(
+                    "Git commit agent generated message for workspace {}",
+                    ctx.workspace.id
+                );
+                Some(msg)
+            }
+            None => {
+                tracing::warn!(
+                    "Git commit agent returned no message for workspace {}, falling back to summary",
+                    ctx.workspace.id
+                );
+                None
+            }
         }
     }
 
@@ -473,6 +533,15 @@ impl LocalContainerService {
         }
 
         any_committed
+    }
+
+    fn collect_changed_files(&self, repos_with_changes: &[(Repo, PathBuf)]) -> Vec<StatusEntry> {
+        let git = GitService::new();
+        repos_with_changes
+            .iter()
+            .filter_map(|(_, path)| git.get_worktree_status(path).ok())
+            .flat_map(|status| status.entries)
+            .collect()
     }
 
     /// Spawn a background task that polls the child process for completion and
@@ -1557,8 +1626,6 @@ impl ContainerService for LocalContainerService {
             return Ok(false);
         }
 
-        let message = self.get_commit_message(ctx).await;
-
         let container_ref = ctx
             .workspace
             .container_ref
@@ -1571,6 +1638,11 @@ impl ContainerService for LocalContainerService {
             tracing::debug!("No changes to commit in any repository");
             return Ok(false);
         }
+
+        // Collect all changed files across repos for the commit agent
+        let all_changed_files = self.collect_changed_files(&repos_with_changes);
+
+        let message = self.get_commit_message(ctx, &all_changed_files).await;
 
         Ok(self.commit_repos(repos_with_changes, &message))
     }

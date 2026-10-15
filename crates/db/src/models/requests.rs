@@ -1,4 +1,4 @@
-use executors::profile::ExecutorConfig;
+use executors::profile::{ExecutorConfig, GitCommitAgentConfig};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 use uuid::Uuid;
@@ -36,6 +36,8 @@ pub struct CreateAndStartWorkspaceRequest {
     pub executor_config: ExecutorConfig,
     pub prompt: String,
     pub attachment_ids: Option<Vec<Uuid>>,
+    #[serde(default)]
+    pub git_commit_agent_config: Option<GitCommitAgentConfig>,
 }
 
 #[derive(Debug, Serialize, Deserialize, TS)]

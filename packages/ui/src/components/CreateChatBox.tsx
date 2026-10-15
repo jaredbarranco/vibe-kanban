@@ -1,5 +1,11 @@
 import { type ReactNode, useRef } from 'react';
-import { CheckIcon, PaperclipIcon, XIcon } from '@phosphor-icons/react';
+import {
+  CheckIcon,
+  GitBranchIcon,
+  PaperclipIcon,
+  RobotIcon,
+  XIcon,
+} from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { Checkbox } from './Checkbox';
 import { ChatBoxBase, VisualVariant, type DropzoneProps } from './ChatBoxBase';
@@ -27,6 +33,18 @@ export interface ExecutorProps<TExecutor extends string = string> {
   selected: TExecutor | null;
   options: TExecutor[];
   onChange: (executor: TExecutor) => void;
+}
+
+export interface GitCommitAgentProps {
+  selected: string | null;
+  options: string[];
+  modelId: string | null;
+  systemPrompt: string | null;
+  onChange: (
+    executor: string | null,
+    modelId: string | null,
+    systemPrompt: string | null
+  ) => void;
 }
 
 export interface SaveAsDefaultProps {
@@ -77,6 +95,7 @@ interface CreateChatBoxProps<TExecutor extends string = string> {
   repoSummaryLabel: string;
   repoSummaryTitle: string;
   linkedIssue?: LinkedIssueBadgeProps | null;
+  gitCommitAgent?: GitCommitAgentProps;
 }
 
 /**
@@ -93,7 +112,6 @@ function defaultExecutorLabel(executor: string) {
 export function CreateChatBox<TExecutor extends string = string>({
   editor,
   renderEditor,
-  agentIcon,
   onSend,
   isSending,
   disabled = false,
@@ -112,6 +130,7 @@ export function CreateChatBox<TExecutor extends string = string>({
   repoSummaryLabel,
   repoSummaryTitle,
   linkedIssue,
+  gitCommitAgent,
 }: CreateChatBoxProps<TExecutor>) {
   const { t } = useTranslation(['common', 'tasks']);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -140,6 +159,10 @@ export function CreateChatBox<TExecutor extends string = string>({
     ? formatExecutorLabel(executor.selected)
     : emptyExecutorLabel;
 
+  const gitCommitAgentLabel = gitCommitAgent?.selected
+    ? formatExecutorLabel(gitCommitAgent.selected as TExecutor)
+    : t('tasks:conversation.gitCommitAgent.none');
+
   return (
     <ChatBoxBase
       editor={renderEditor({
@@ -157,9 +180,57 @@ export function CreateChatBox<TExecutor extends string = string>({
       visualVariant={VisualVariant.NORMAL}
       dropzone={dropzone}
       modelSelector={modelSelector}
+      aboveEditor={
+        gitCommitAgent?.selected ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-low font-medium">
+                {t('tasks:conversation.gitCommitAgent.modelIdLabel')}
+              </label>
+              <input
+                type="text"
+                className="w-full rounded border border-border bg-primary px-2 py-1.5 text-sm text-normal placeholder:text-subtle focus:outline-none focus:ring-1 focus:ring-border-focus disabled:cursor-not-allowed disabled:opacity-50"
+                placeholder={t(
+                  'tasks:conversation.gitCommitAgent.modelIdPlaceholder'
+                )}
+                value={gitCommitAgent.modelId ?? ''}
+                onChange={(e) =>
+                  gitCommitAgent.onChange(
+                    gitCommitAgent.selected,
+                    e.target.value || null,
+                    gitCommitAgent.systemPrompt
+                  )
+                }
+                disabled={isDisabled}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-low font-medium">
+                {t('tasks:conversation.gitCommitAgent.systemPromptLabel')}
+              </label>
+              <textarea
+                className="w-full rounded border border-border bg-primary px-2 py-1.5 text-sm text-normal placeholder:text-subtle resize-none focus:outline-none focus:ring-1 focus:ring-border-focus"
+                rows={3}
+                placeholder={t(
+                  'tasks:conversation.gitCommitAgent.systemPromptPlaceholder'
+                )}
+                value={gitCommitAgent.systemPrompt ?? ''}
+                onChange={(e) =>
+                  gitCommitAgent.onChange(
+                    gitCommitAgent.selected,
+                    gitCommitAgent.modelId,
+                    e.target.value || null
+                  )
+                }
+                disabled={isDisabled}
+              />
+            </div>
+          </div>
+        ) : undefined
+      }
       headerLeft={
         <>
-          {agentIcon}
+          <RobotIcon className="size-icon-xl text-low shrink-0" />
           <ToolbarDropdown label={executorLabel} disabled={isDisabled}>
             <DropdownMenuLabel>
               {t('tasks:conversation.executors')}
@@ -174,6 +245,44 @@ export function CreateChatBox<TExecutor extends string = string>({
               </DropdownMenuItem>
             ))}
           </ToolbarDropdown>
+          {gitCommitAgent && (
+            <>
+              <GitBranchIcon className="size-icon-xl text-low shrink-0 ml-1" />
+              <ToolbarDropdown
+                label={gitCommitAgentLabel}
+                disabled={isDisabled}
+              >
+                <DropdownMenuLabel>
+                  {t('tasks:conversation.gitCommitAgent.label')}
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  icon={
+                    gitCommitAgent.selected === null ? CheckIcon : undefined
+                  }
+                  onClick={() => gitCommitAgent.onChange(null, null, null)}
+                >
+                  {t('tasks:conversation.gitCommitAgent.none')}
+                </DropdownMenuItem>
+                {gitCommitAgent.options.map((exec) => (
+                  <DropdownMenuItem
+                    key={exec}
+                    icon={
+                      gitCommitAgent.selected === exec ? CheckIcon : undefined
+                    }
+                    onClick={() =>
+                      gitCommitAgent.onChange(
+                        exec,
+                        gitCommitAgent.modelId,
+                        gitCommitAgent.systemPrompt
+                      )
+                    }
+                  >
+                    {formatExecutorLabel(exec as TExecutor)}
+                  </DropdownMenuItem>
+                ))}
+              </ToolbarDropdown>
+            </>
+          )}
           {saveAsDefault?.visible && (
             <label className="flex items-center gap-1.5 text-sm text-low cursor-pointer ml-2">
               <Checkbox

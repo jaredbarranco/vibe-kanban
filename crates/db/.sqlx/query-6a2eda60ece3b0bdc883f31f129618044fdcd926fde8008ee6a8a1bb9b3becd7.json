@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE workspaces SET git_commit_agent_config = $1, updated_at = datetime('now', 'subsec') WHERE id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "6a2eda60ece3b0bdc883f31f129618044fdcd926fde8008ee6a8a1bb9b3becd7"
+}

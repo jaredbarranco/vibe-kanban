@@ -95,3 +95,8 @@ vibe-kanban-cloud/
 *.ts.net.key
 Caddyfile
 Caddyfile.dev
+
+# Build artifacts / local scratch
+release/
+npx-cli/vibe-sandbox-*.tgz
+memory/
